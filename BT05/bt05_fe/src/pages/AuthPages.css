@@ -1,0 +1,59 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-header {
+  margin-bottom: 30px;
+}
+
+.auth-form {
+  margin-top: 30px;
+}
+
+.auth-form :global(.ant-form-item) {
+  margin-bottom: 20px;
+}
+
+.auth-form :global(.ant-input),
+.auth-form :global(.ant-input-password) {
+  border-radius: 4px;
+}
+
+.auth-form :global(.ant-btn) {
+  font-weight: 500;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.auth-form :global(.ant-btn-primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.auth-form :global(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
