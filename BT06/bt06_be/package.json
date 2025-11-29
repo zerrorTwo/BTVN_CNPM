@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@elastic/elasticsearch": "^9.2.0",
+    "@elastic/elasticsearch": "^8.13.0",
     "bcrypt": "^5.1.0",
     "builder-pattern": "^2.2.0",
     "class-transformer": "^0.5.1",

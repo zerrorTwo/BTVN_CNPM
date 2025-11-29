@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Select, Checkbox, Slider, Button, Row, Col, Space } from 'antd';
+import { Card, Input, Select, Checkbox, Button, Row, Col, Space } from 'antd';
 import { SearchOutlined, ClearOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 import { useDebounce } from '../hooks/useDebounce';
 import apiClient from '../services/api';
@@ -18,12 +18,13 @@ export interface ProductFilterValues {
 
 interface ProductFiltersProps {
     onFilterChange: (filters: ProductFilterValues) => void;
+    initialFilters?: ProductFilterValues;
 }
 
-export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange }) => {
-    const [searchInput, setSearchInput] = useState('');
+export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, initialFilters }) => {
+    const [searchInput, setSearchInput] = useState(initialFilters?.search || '');
     const [categories, setCategories] = useState<any[]>([]);
-    const [filters, setFilters] = useState<ProductFilterValues>({
+    const [filters, setFilters] = useState<ProductFilterValues>(initialFilters || {
         search: '',
         categoryId: undefined,
         minPrice: undefined,
@@ -34,6 +35,14 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange }
     });
 
     const debouncedSearch = useDebounce(searchInput, 500);
+
+    // Update filters when initialFilters change (from URL params)
+    useEffect(() => {
+        if (initialFilters) {
+            setFilters(initialFilters);
+            setSearchInput(initialFilters.search || '');
+        }
+    }, [initialFilters]);
 
     // Fetch categories on mount
     useEffect(() => {

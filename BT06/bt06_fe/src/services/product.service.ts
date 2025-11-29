@@ -84,12 +84,12 @@ export const categoryService = {
     id: number,
     data: Partial<Category>
   ): Promise<Category> => {
-    const response = await api.put(`/categories/${id}`, data);
+    const response = await api.axiosInstance.put(`/categories/${id}`, data);
     return response.data.data;
   },
 
   // Delete category (Admin only)
   deleteCategory: async (id: number): Promise<void> => {
-    await api.delete(`/categories/${id}`);
+    await api.axiosInstance.delete(`/categories/${id}`);
   },
 };
