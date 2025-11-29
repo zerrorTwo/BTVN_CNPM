@@ -29,6 +29,8 @@ export interface Product {
   imageUrl?: string;
   categoryId: number;
   category?: Category;
+  views?: number;
+  discount?: number;
   createdAt?: string;
   updatedAt?: string;
 }

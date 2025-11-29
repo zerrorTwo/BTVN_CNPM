@@ -121,7 +121,7 @@ const ProductList: React.FC<ProductListProps> = ({ filters }) => {
                         {products.map((product) => (
                             <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
                                 <Badge.Ribbon
-                                    text={product.discount ? `-${product.discount}%` : null}
+                                    text={product.discount && product.discount > 0 ? `-${product.discount}%` : null}
                                     color="red"
                                 >
                                     <Card
@@ -174,7 +174,7 @@ const ProductList: React.FC<ProductListProps> = ({ filters }) => {
                                                 </Tag>
                                             )}
                                             <div className="product-price">
-                                                {product.discount > 0 ? (
+                                                {product.discount && product.discount > 0 ? (
                                                     <>
                                                         <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '14px', marginRight: 8 }}>
                                                             {formatPrice(product.price)}
@@ -187,7 +187,7 @@ const ProductList: React.FC<ProductListProps> = ({ filters }) => {
                                                     formatPrice(product.price)
                                                 )}
                                             </div>
-                                            {product.views > 0 && (
+                                            {product.views && product.views > 0 && (
                                                 <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
                                                     <EyeOutlined /> {product.views} lượt xem
                                                 </div>

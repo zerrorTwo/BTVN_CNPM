@@ -35,9 +35,10 @@ class ApiClient {
     return this.client.post("/auth/forgot-password", data);
   }
 
-  // resetPassword(data: any) {
-  //   return this.client.post("/auth/reset-password", data);
-  // }
+  resetPassword(data: any) {
+    return this.client.post("/auth/reset-password", data);
+  }
+
 
   getCurrentUser() {
     return this.client.get("/auth/current-user");

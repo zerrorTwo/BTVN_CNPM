@@ -36,8 +36,9 @@ export class ProductController {
   }
 
   /**
-   * Get all products with pagination and filters
-   * GET /api/products?page=1&limit=10&categoryId=1&search=phone&minPrice=100&maxPrice=1000
+   * Get all products with pagination and filters (using Elasticsearch)
+   * GET /api/products?page=1&limit=10&categoryId=1&search=phone&minPrice=100&maxPrice=1000&hasDiscount=true&minViews=100&sort=price_asc
+   * Sort options: price_asc, price_desc, views_desc, newest
    */
   @Get("/")
   async getProducts(
@@ -53,6 +54,9 @@ export class ProductController {
         search: query.search,
         minPrice: query.minPrice ? parseFloat(query.minPrice) : undefined,
         maxPrice: query.maxPrice ? parseFloat(query.maxPrice) : undefined,
+        hasDiscount: query.hasDiscount === 'true' || query.hasDiscount === true,
+        minViews: query.minViews ? parseInt(query.minViews) : undefined,
+        sort: query.sort, // price_asc, price_desc, views_desc, newest
       };
 
       const result = await this.productService.getProducts(filters, {

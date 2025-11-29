@@ -13,7 +13,6 @@ const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [searchQuery, setSearchQuery] = useState<string>("");
 
     useEffect(() => {
         loadFeaturedProducts();
@@ -39,8 +38,11 @@ const HomePage: React.FC = () => {
     };
 
     const handleSearch = (value: string) => {
-        setSearchQuery(value);
-        navigate("/products");
+        if (value.trim()) {
+            navigate(`/products?search=${encodeURIComponent(value)}`);
+        } else {
+            navigate("/products");
+        }
     };
 
     const formatPrice = (price: number) => {

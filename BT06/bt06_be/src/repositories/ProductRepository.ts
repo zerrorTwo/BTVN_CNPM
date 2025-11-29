@@ -8,6 +8,9 @@ export interface ProductFilters {
   search?: string;
   minPrice?: number;
   maxPrice?: number;
+  hasDiscount?: boolean;
+  minViews?: number;
+  sort?: string; // price_asc, price_desc, views_desc, newest
 }
 
 export interface PaginationParams {
@@ -29,93 +32,67 @@ export class ProductRepository {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
-    // If search query exists, use Elasticsearch
-    if (filters.search && filters.search.trim()) {
-      try {
-        const elasticResults = await this.searchService.search({
-          keyword: filters.search,
-          categoryId: filters.categoryId,
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-        });
+    // ALWAYS use Elasticsearch for all queries
+    try {
+      const elasticResults = await this.searchService.search({
+        keyword: filters.search,
+        categoryId: filters.categoryId,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        hasDiscount: filters.hasDiscount,
+        minViews: filters.minViews,
+        sort: filters.sort,
+        limit,
+        offset,
+      });
 
-        // Get product IDs from Elasticsearch results
-        const productIds = elasticResults.map((result: any) => result.id);
-        
-        if (productIds.length === 0) {
-          return { products: [], total: 0 };
-        }
+      // Get product IDs from Elasticsearch results
+      const productIds = elasticResults.map((result: any) => result.id);
+      
+      if (productIds.length === 0) {
+        return { products: [], total: 0 };
+      }
 
-        // Fetch full product details from database with pagination
-        const { count, rows } = await Product.findAndCountAll({
-          where: {
-            id: {
-              [Op.in]: productIds,
-            },
+      // Fetch full product details from database maintaining ES order
+      const products = await Product.findAll({
+        where: {
+          id: {
+            [Op.in]: productIds,
           },
-          include: [
-            {
-              model: Category,
-              as: "category",
-              attributes: ["id", "name", "slug"],
-            },
-          ],
-          limit,
-          offset,
-          order: [["createdAt", "DESC"]],
-        });
-
-        return {
-          products: rows,
-          total: count,
-        };
-      } catch (error) {
-        console.error('Elasticsearch search failed, falling back to SQL:', error);
-        // Fall through to SQL search
-      }
-    }
-
-    // Standard SQL search (fallback or when no search query)
-    const where: any = {};
-
-    if (filters.categoryId) {
-      where.categoryId = filters.categoryId;
-    }
-
-    if (filters.search) {
-      where.name = {
-        [Op.like]: `%${filters.search}%`,
-      };
-    }
-
-    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-      where.price = {};
-      if (filters.minPrice !== undefined) {
-        where.price[Op.gte] = filters.minPrice;
-      }
-      if (filters.maxPrice !== undefined) {
-        where.price[Op.lte] = filters.maxPrice;
-      }
-    }
-
-    const { count, rows } = await Product.findAndCountAll({
-      where,
-      include: [
-        {
-          model: Category,
-          as: "category",
-          attributes: ["id", "name", "slug"],
         },
-      ],
-      limit,
-      offset,
-      order: [["createdAt", "DESC"]],
-    });
+        include: [
+          {
+            model: Category,
+            as: "category",
+            attributes: ["id", "name", "slug"],
+          },
+        ],
+      });
 
-    return {
-      products: rows,
-      total: count,
-    };
+      // Maintain Elasticsearch order
+      const orderedProducts = productIds
+        .map(id => products.find(p => p.id === id))
+        .filter(p => p !== undefined) as Product[];
+
+      // Get total count from Elasticsearch
+      const totalResults = await this.searchService.count({
+        keyword: filters.search,
+        categoryId: filters.categoryId,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        hasDiscount: filters.hasDiscount,
+        minViews: filters.minViews,
+      });
+
+      return {
+        products: orderedProducts,
+        total: totalResults,
+      };
+    } catch (error) {
+      console.error('Elasticsearch search failed:', error);
+      // Return empty results if ES fails
+      return { products: [], total: 0 };
+    }
   }
 
   async findById(id: number): Promise<Product | null> {

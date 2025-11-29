@@ -152,6 +152,22 @@ const seed = async () => {
 
     // Product creation is handled within the category loop above using SEED_DATA
 
+    // Initialize Elasticsearch
+    console.log("Initializing Elasticsearch...");
+    const { SearchService } = await import("../services/search.service");
+    const searchService = new SearchService();
+    
+    try {
+      await searchService.createIndex();
+      console.log("Elasticsearch index created");
+      
+      await searchService.syncProducts();
+      console.log("Products synced to Elasticsearch");
+    } catch (error) {
+      console.error("Elasticsearch initialization failed:", error);
+      console.log("Continuing without Elasticsearch...");
+    }
+
     console.log("Seed completed successfully!");
     process.exit(0);
   } catch (error) {
