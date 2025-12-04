@@ -1,0 +1,13 @@
+.add-to-cart-button-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.add-to-cart-quantity {
+  width: 80px;
+}
+
+.add-to-cart-button {
+  flex: 1;
+}

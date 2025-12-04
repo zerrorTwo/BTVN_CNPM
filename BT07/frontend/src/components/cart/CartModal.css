@@ -1,0 +1,37 @@
+.cart-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.cart-modal-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.cart-modal-list {
+  overflow: hidden;
+}
+
+.cart-modal-summary {
+  position: sticky;
+  top: 0;
+}
+
+.cart-modal-loading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 16px;
+  color: #8c8c8c;
+}
+
+@media (max-width: 768px) {
+  .cart-modal-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .cart-modal-summary {
+    position: relative;
+  }
+}

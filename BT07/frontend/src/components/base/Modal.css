@@ -1,0 +1,25 @@
+.cart-library-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cart-library-modal .ant-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  border: none;
+}
+
+.cart-library-modal .ant-modal-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.cart-library-modal .ant-modal-close {
+  color: white;
+}
+
+.cart-library-modal .ant-modal-close:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
