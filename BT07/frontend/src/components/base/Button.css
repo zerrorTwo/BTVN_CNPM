@@ -1,0 +1,29 @@
+.cart-library-button {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.cart-library-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cart-library-button-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.cart-library-button-primary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #65408b 100%);
+}
+
+.cart-library-button-secondary {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+}
+
+.cart-library-button-danger:hover {
+  transform: translateY(-2px);
+}
