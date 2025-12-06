@@ -1,0 +1,30 @@
+.product-filter {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.product-filter .ant-card-head-title {
+  font-weight: 600;
+}
+
+.price-range-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.product-filter .ant-divider {
+  margin: 12px 0;
+}
+
+@media (max-width: 992px) {
+  .product-filter {
+    position: static;
+    margin-bottom: 24px;
+  }
+}
