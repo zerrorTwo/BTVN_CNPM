@@ -1,0 +1,41 @@
+{
+  "name": "shopping-cart-graphql-template-v1",
+  "version": "1.0.1",
+  "private": false,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "concurrently \"npm run build --workspace=backend\" \"npm run build --workspace=frontend\"",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "preview": "concurrently \"npm run preview --workspace=backend\" \"npm run preview --workspace=frontend\"",
+    "preview:backend": "npm run preview --workspace=backend",
+    "preview:frontend": "npm run preview --workspace=frontend"
+  },
+  "keywords": [
+    "shopping-cart",
+    "cart",
+    "e-commerce",
+    "graphql",
+    "authentication",
+    "jwt",
+    "react",
+    "typescript",
+    "antd",
+    "apollo-client",
+    "cart-library",
+    "reusable-components"
+  ],
+  "author": "zerrorTwo",
+  "license": "ISC",
+  "description": "Shopping Cart Library with GraphQL and Authentication",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

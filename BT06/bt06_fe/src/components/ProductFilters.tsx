@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Select, Checkbox, Button, Row, Col, Space } from 'antd';
-import { SearchOutlined, ClearOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
-import { useDebounce } from '../hooks/useDebounce';
+import { Card, Input, Select, Button, Row, Col, Space } from 'antd';
+import { SearchOutlined, ClearOutlined, SortAscendingOutlined, SortDescendingOutlined, FilterOutlined } from '@ant-design/icons';
 import apiClient from '../services/api';
 
 const { Option } = Select;
@@ -24,7 +23,9 @@ interface ProductFiltersProps {
 export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, initialFilters }) => {
     const [searchInput, setSearchInput] = useState(initialFilters?.search || '');
     const [categories, setCategories] = useState<any[]>([]);
-    const [filters, setFilters] = useState<ProductFilterValues>(initialFilters || {
+
+    // Local state for all filters (not applied yet)
+    const [localFilters, setLocalFilters] = useState<ProductFilterValues>(initialFilters || {
         search: '',
         categoryId: undefined,
         minPrice: undefined,
@@ -34,12 +35,14 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
         sortOrder: 'DESC',
     });
 
-    const debouncedSearch = useDebounce(searchInput, 500);
+    // Applied filters (sent to parent)
+    const [appliedFilters, setAppliedFilters] = useState<ProductFilterValues>(localFilters);
 
     // Update filters when initialFilters change (from URL params)
     useEffect(() => {
         if (initialFilters) {
-            setFilters(initialFilters);
+            setLocalFilters(initialFilters);
+            setAppliedFilters(initialFilters);
             setSearchInput(initialFilters.search || '');
         }
     }, [initialFilters]);
@@ -59,31 +62,38 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
         fetchCategories();
     }, []);
 
-    // Update filters when debounced search changes
+    // Notify parent when applied filters change
     useEffect(() => {
-        setFilters(prev => ({ ...prev, search: debouncedSearch }));
-    }, [debouncedSearch]);
+        onFilterChange(appliedFilters);
+    }, [appliedFilters, onFilterChange]);
 
-    // Notify parent when filters change
-    useEffect(() => {
-        onFilterChange(filters);
-    }, [filters, onFilterChange]);
+    const handleApplyFilters = () => {
+        setAppliedFilters({ ...localFilters, search: searchInput });
+    };
+
+    const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleApplyFilters();
+        }
+    };
 
     const handleClearFilters = () => {
-        setSearchInput('');
-        setFilters({
+        const defaultFilters = {
             search: '',
             categoryId: undefined,
             minPrice: undefined,
             maxPrice: undefined,
             hasPromotion: false,
-            sortBy: 'createdAt',
-            sortOrder: 'DESC',
-        });
+            sortBy: 'createdAt' as const,
+            sortOrder: 'DESC' as const,
+        };
+        setSearchInput('');
+        setLocalFilters(defaultFilters);
+        setAppliedFilters(defaultFilters);
     };
 
     const toggleSortOrder = () => {
-        setFilters(prev => ({
+        setLocalFilters(prev => ({
             ...prev,
             sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
         }));
@@ -114,14 +124,10 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                         placeholder="Nhập tên sản phẩm..."
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyPress={handleSearchKeyPress}
                         allowClear
                         size="large"
                     />
-                    {debouncedSearch !== searchInput && (
-                        <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
-                            Đang tìm kiếm...
-                        </div>
-                    )}
                 </div>
 
                 {/* Category */}
@@ -131,8 +137,8 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                     </label>
                     <Select
                         placeholder="Chọn danh mục"
-                        value={filters.categoryId}
-                        onChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
+                        value={localFilters.categoryId}
+                        onChange={(value) => setLocalFilters(prev => ({ ...prev, categoryId: value }))}
                         allowClear
                         style={{ width: '100%' }}
                         size="large"
@@ -155,8 +161,8 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                             <Input
                                 type="number"
                                 placeholder="Giá tối thiểu"
-                                value={filters.minPrice}
-                                onChange={(e) => setFilters(prev => ({
+                                value={localFilters.minPrice}
+                                onChange={(e) => setLocalFilters(prev => ({
                                     ...prev,
                                     minPrice: e.target.value ? Number(e.target.value) : undefined
                                 }))}
@@ -168,8 +174,8 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                             <Input
                                 type="number"
                                 placeholder="Giá tối đa"
-                                value={filters.maxPrice}
-                                onChange={(e) => setFilters(prev => ({
+                                value={localFilters.maxPrice}
+                                onChange={(e) => setLocalFilters(prev => ({
                                     ...prev,
                                     maxPrice: e.target.value ? Number(e.target.value) : undefined
                                 }))}
@@ -180,16 +186,6 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                     </Row>
                 </div>
 
-                {/* Promotion Filter */}
-                <div>
-                    <Checkbox
-                        checked={filters.hasPromotion}
-                        onChange={(e) => setFilters(prev => ({ ...prev, hasPromotion: e.target.checked }))}
-                    >
-                        <span style={{ fontWeight: 500 }}>Chỉ hiển thị sản phẩm khuyến mãi</span>
-                    </Checkbox>
-                </div>
-
                 {/* Sort Options */}
                 <div>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
@@ -198,8 +194,8 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                     <Row gutter={16}>
                         <Col span={18}>
                             <Select
-                                value={filters.sortBy}
-                                onChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
+                                value={localFilters.sortBy}
+                                onChange={(value) => setLocalFilters(prev => ({ ...prev, sortBy: value }))}
                                 style={{ width: '100%' }}
                                 size="large"
                             >
@@ -210,17 +206,29 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({ onFilterChange, 
                         </Col>
                         <Col span={6}>
                             <Button
-                                icon={filters.sortOrder === 'ASC' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+                                icon={localFilters.sortOrder === 'ASC' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
                                 onClick={toggleSortOrder}
                                 size="large"
                                 style={{ width: '100%' }}
-                                title={filters.sortOrder === 'ASC' ? 'Tăng dần' : 'Giảm dần'}
+                                title={localFilters.sortOrder === 'ASC' ? 'Tăng dần' : 'Giảm dần'}
                             >
-                                {filters.sortOrder === 'ASC' ? 'A-Z' : 'Z-A'}
+                                {localFilters.sortOrder === 'ASC' ? 'A-Z' : 'Z-A'}
                             </Button>
                         </Col>
                     </Row>
                 </div>
+
+                {/* Apply Button */}
+                <Button
+                    type="primary"
+                    size="large"
+                    icon={<FilterOutlined />}
+                    onClick={handleApplyFilters}
+                    block
+                    style={{ marginTop: 8 }}
+                >
+                    Áp dụng bộ lọc
+                </Button>
             </Space>
         </Card>
     );
