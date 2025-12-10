@@ -1,6 +1,6 @@
 import { Product } from "../models/Product";
 import { Category } from "../models/Category";
-import { Op } from "sequelize";
+import { Op, literal } from "sequelize";
 import { SearchService } from "../services/search.service";
 
 export interface ProductFilters {
@@ -46,14 +46,14 @@ export class ProductRepository {
         offset,
       });
 
-      // Get product IDs from Elasticsearch results
-      const productIds = elasticResults.map((result: any) => result.id);
-      
+      // Get product IDs from Elasticsearch results (already an array of IDs)
+      const productIds = elasticResults;
+
       if (productIds.length === 0) {
         return { products: [], total: 0 };
       }
 
-      // Fetch full product details from database maintaining ES order
+      // Fetch full product details from database maintaining ES order using SQL ORDER BY FIELD
       const products = await Product.findAll({
         where: {
           id: {
@@ -67,12 +67,8 @@ export class ProductRepository {
             attributes: ["id", "name", "slug"],
           },
         ],
+        order: literal(`FIELD(Product.id, ${productIds.join(",")})`),
       });
-
-      // Maintain Elasticsearch order
-      const orderedProducts = productIds
-        .map(id => products.find(p => p.id === id))
-        .filter(p => p !== undefined) as Product[];
 
       // Get total count from Elasticsearch
       const totalResults = await this.searchService.count({
@@ -85,11 +81,11 @@ export class ProductRepository {
       });
 
       return {
-        products: orderedProducts,
+        products,
         total: totalResults,
       };
     } catch (error) {
-      console.error('Elasticsearch search failed:', error);
+      console.error("Elasticsearch search failed:", error);
       // Return empty results if ES fails
       return { products: [], total: 0 };
     }
@@ -115,7 +111,16 @@ export class ProductRepository {
     imageUrl?: string;
     categoryId: number;
   }): Promise<Product> {
-    return await Product.create(data);
+    const product = await Product.create(data);
+
+    // Auto-sync to Elasticsearch
+    try {
+      await this.searchService.indexProduct(product);
+    } catch (error) {
+      console.error("Failed to index product in ES:", error);
+    }
+
+    return product;
   }
 
   async update(
@@ -129,16 +134,37 @@ export class ProductRepository {
       categoryId?: number;
     }
   ): Promise<[number, Product[]]> {
-    return await Product.update(data, {
+    const result = await Product.update(data, {
       where: { id },
       returning: true,
     });
+
+    // Auto-sync to Elasticsearch
+    try {
+      const updatedProduct = await Product.findByPk(id);
+      if (updatedProduct) {
+        await this.searchService.indexProduct(updatedProduct);
+      }
+    } catch (error) {
+      console.error("Failed to update product in ES:", error);
+    }
+
+    return result;
   }
 
   async delete(id: number): Promise<number> {
-    return await Product.destroy({
+    const result = await Product.destroy({
       where: { id },
     });
+
+    // Auto-sync to Elasticsearch - remove from index
+    try {
+      await this.searchService.deleteProduct(id);
+    } catch (error) {
+      console.error("Failed to delete product from ES:", error);
+    }
+
+    return result;
   }
 
   async updateStock(id: number, quantity: number): Promise<void> {

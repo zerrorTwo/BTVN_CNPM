@@ -40,6 +40,16 @@ const ProductList: React.FC<ProductListProps> = ({ filters }) => {
                 setLoading(true);
                 const currentPage = resetList ? 1 : page;
 
+                // Map frontend sortBy + sortOrder to backend sort format
+                let sortParam: string | undefined;
+                if (filters.sortBy === 'price') {
+                    sortParam = filters.sortOrder === 'ASC' ? 'price_asc' : 'price_desc';
+                } else if (filters.sortBy === 'views') {
+                    sortParam = 'views_desc'; // Views only sorted descending
+                } else if (filters.sortBy === 'createdAt') {
+                    sortParam = 'newest';
+                }
+
                 const response = await productService.getProducts({
                     page: currentPage,
                     limit: 12,
@@ -47,10 +57,7 @@ const ProductList: React.FC<ProductListProps> = ({ filters }) => {
                     categoryId: filters.categoryId,
                     minPrice: filters.minPrice,
                     maxPrice: filters.maxPrice,
-                    // Note: Backend doesn't support these yet, but frontend is ready
-                    // hasPromotion: filters.hasPromotion,
-                    // sortBy: filters.sortBy,
-                    // sortOrder: filters.sortOrder,
+                    sort: sortParam,
                 });
 
                 if (resetList) {

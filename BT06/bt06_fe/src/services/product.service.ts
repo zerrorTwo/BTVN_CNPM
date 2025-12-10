@@ -8,6 +8,7 @@ export interface ProductFilters {
   search?: string;
   minPrice?: number;
   maxPrice?: number;
+  sort?: string; // price_asc, price_desc, views_desc, newest
 }
 
 export const productService = {
@@ -26,6 +27,7 @@ export const productService = {
       params.append("minPrice", filters.minPrice.toString());
     if (filters.maxPrice !== undefined)
       params.append("maxPrice", filters.maxPrice.toString());
+    if (filters.sort) params.append("sort", filters.sort);
 
     const response = await api.axiosInstance.get(
       `/products?${params.toString()}`

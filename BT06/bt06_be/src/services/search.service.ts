@@ -1,5 +1,5 @@
-import elasticClient, { ELASTICSEARCH_INDEX } from '../config/elasticsearch';
-import Product from '../models/Product';
+import elasticClient, { ELASTICSEARCH_INDEX } from "../config/elasticsearch";
+import Product from "../models/Product";
 
 export class SearchService {
   async indexProduct(product: Product) {
@@ -11,18 +11,26 @@ export class SearchService {
           id: product.id,
           name: product.name,
           description: product.description,
-          price: product.price,
-          stock: product.stock,
-          imageUrl: product.imageUrl,
           categoryId: product.categoryId,
+          price: product.price,
           views: product.views,
           discount: product.discount,
           createdAt: product.createdAt,
-          updatedAt: product.updatedAt,
         },
       });
     } catch (error) {
-      console.error('Error indexing product:', error);
+      console.error("Error indexing product:", error);
+    }
+  }
+
+  async deleteProduct(id: number) {
+    try {
+      await elasticClient.delete({
+        index: ELASTICSEARCH_INDEX,
+        id: id.toString(),
+      });
+    } catch (error) {
+      console.error("Error deleting product from ES:", error);
     }
   }
 
@@ -40,27 +48,42 @@ export class SearchService {
       await elasticClient.indices.create({
         index: ELASTICSEARCH_INDEX,
         body: {
+          settings: {
+            analysis: {
+              analyzer: {
+                vietnamese_analyzer: {
+                  type: "custom",
+                  tokenizer: "standard",
+                  filter: ["lowercase", "asciifolding"],
+                },
+              },
+            },
+          },
           mappings: {
             properties: {
-              id: { type: 'integer' },
-              name: { type: 'text' },
-              description: { type: 'text' },
-              price: { type: 'float' },
-              stock: { type: 'integer' },
-              imageUrl: { type: 'keyword' },
-              categoryId: { type: 'integer' },
-              views: { type: 'integer' },
-              discount: { type: 'integer' },
-              createdAt: { type: 'date' },
-              updatedAt: { type: 'date' },
+              id: { type: "integer" },
+              name: {
+                type: "text",
+                analyzer: "vietnamese_analyzer",
+                fields: {
+                  keyword: { type: "keyword" },
+                },
+              },
+              description: {
+                type: "text",
+                analyzer: "vietnamese_analyzer",
+              },
+              categoryId: { type: "integer" },
+              price: { type: "float" },
+              views: { type: "integer" },
+              discount: { type: "integer" },
+              createdAt: { type: "date" },
             },
           },
         },
       });
-
-      console.log(`Index ${ELASTICSEARCH_INDEX} created successfully`);
     } catch (error) {
-      console.error('Error creating index:', error);
+      console.error("Error creating index:", error);
       throw error;
     }
   }
@@ -76,14 +99,11 @@ export class SearchService {
           id: doc.id,
           name: doc.name,
           description: doc.description,
-          price: doc.price,
-          stock: doc.stock,
-          imageUrl: doc.imageUrl,
           categoryId: doc.categoryId,
+          price: doc.price,
           views: doc.views,
           discount: doc.discount,
           createdAt: doc.createdAt,
-          updatedAt: doc.updatedAt,
         },
       ]);
 
@@ -102,16 +122,26 @@ export class SearchService {
             });
           }
         });
-        console.error('Bulk index errors', erroredDocuments);
+        console.error("Bulk index errors", erroredDocuments);
       }
     } catch (error) {
-      console.error('Error syncing products:', error);
+      console.error("Error syncing products:", error);
       throw error;
     }
   }
 
   async search(params: any) {
-    const { keyword, categoryId, minPrice, maxPrice, minViews, hasDiscount, sort, limit, offset } = params;
+    const {
+      keyword,
+      categoryId,
+      minPrice,
+      maxPrice,
+      minViews,
+      hasDiscount,
+      sort,
+      limit,
+      offset,
+    } = params;
     const must: any[] = [];
     const filter: any[] = [];
 
@@ -119,7 +149,7 @@ export class SearchService {
       must.push({
         multi_match: {
           query: keyword,
-          fields: ['name', 'description'],
+          fields: ["name", "description"],
         },
       });
     } else {
@@ -136,24 +166,24 @@ export class SearchService {
       if (maxPrice) range.lte = maxPrice;
       filter.push({ range: { price: range } });
     }
-    
-    if (hasDiscount === 'true' || hasDiscount === true) {
-        filter.push({ range: { discount: { gt: 0 } } });
+
+    if (hasDiscount === "true" || hasDiscount === true) {
+      filter.push({ range: { discount: { gt: 0 } } });
     }
-    
+
     if (minViews) {
-        filter.push({ range: { views: { gte: minViews } } });
+      filter.push({ range: { views: { gte: minViews } } });
     }
 
     const sortOptions: any[] = [];
-    if (sort === 'price_asc') sortOptions.push({ price: 'asc' });
-    if (sort === 'price_desc') sortOptions.push({ price: 'desc' });
-    if (sort === 'views_desc') sortOptions.push({ views: 'desc' });
-    if (sort === 'newest') sortOptions.push({ createdAt: 'desc' });
-    
+    if (sort === "price_asc") sortOptions.push({ price: "asc" });
+    if (sort === "price_desc") sortOptions.push({ price: "desc" });
+    if (sort === "views_desc") sortOptions.push({ views: "desc" });
+    if (sort === "newest") sortOptions.push({ createdAt: "desc" });
+
     // Default sort if none specified
     if (sortOptions.length === 0) {
-      sortOptions.push({ createdAt: 'desc' });
+      sortOptions.push({ createdAt: "desc" });
     }
 
     try {
@@ -166,21 +196,29 @@ export class SearchService {
           },
         },
         sort: sortOptions,
-        size: limit || 10000, // Default to large number if no limit
+        size: limit || 10000,
         from: offset || 0,
+        _source: ["id"], // Only fetch ID field
       });
 
-      return result.hits.hits.map((hit) => hit._source);
+      // Return array of IDs in the order ES sorted them
+      const ids = result.hits.hits
+        .map((hit) => {
+          const id = (hit._source as any)?.id;
+          return id ? parseInt(id.toString()) : null;
+        })
+        .filter((id) => id !== undefined && id !== null);
+
+      return ids;
     } catch (error) {
-      console.error('Error searching products:', error);
-      // Return empty array or throw, depending on preference. 
-      // If index doesn't exist yet, it might throw.
-      return []; 
+      console.error("Error searching products:", error);
+      return [];
     }
   }
 
   async count(params: any): Promise<number> {
-    const { keyword, categoryId, minPrice, maxPrice, minViews, hasDiscount } = params;
+    const { keyword, categoryId, minPrice, maxPrice, minViews, hasDiscount } =
+      params;
     const must: any[] = [];
     const filter: any[] = [];
 
@@ -188,7 +226,7 @@ export class SearchService {
       must.push({
         multi_match: {
           query: keyword,
-          fields: ['name', 'description'],
+          fields: ["name", "description"],
         },
       });
     } else {
@@ -205,13 +243,13 @@ export class SearchService {
       if (maxPrice) range.lte = maxPrice;
       filter.push({ range: { price: range } });
     }
-    
-    if (hasDiscount === 'true' || hasDiscount === true) {
-        filter.push({ range: { discount: { gt: 0 } } });
+
+    if (hasDiscount === "true" || hasDiscount === true) {
+      filter.push({ range: { discount: { gt: 0 } } });
     }
-    
+
     if (minViews) {
-        filter.push({ range: { views: { gte: minViews } } });
+      filter.push({ range: { views: { gte: minViews } } });
     }
 
     try {
@@ -227,7 +265,7 @@ export class SearchService {
 
       return result.count;
     } catch (error) {
-      console.error('Error counting products:', error);
+      console.error("Error counting products:", error);
       return 0;
     }
   }
